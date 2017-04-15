@@ -1,0 +1,72 @@
+# Configuration based on:
+# https://hub.docker.com/_/cassandra/
+
+# Ports:
+# 7000: intra-node communication
+# 7001: TLS intra-node communication
+# 7199: JMX
+# 9042: CQL
+# 9160: thrift service
+
+version: '2'
+services:
+  docker-cassandra-1:
+    image: cassandra:latest
+    container_name: docker-cassandra-1
+    environment:
+      - CASSANDRA_CLUSTER_NAME=docker-cassandra-cluster
+      - CASSANDRA_START_RPC=true
+      - LOCAL_JMX=no
+      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false
+    volumes:
+      - data-1:/var/lib/cassandra
+    ports:
+      - 7000:7000
+      - 7001:7001
+      - 7199:7199
+      - 9042:9042
+      - 9160:9160
+    networks:
+      - c-network
+
+  docker-cassandra-2:
+    image: cassandra:latest
+    container_name: docker-cassandra-2
+    environment:
+      - CASSANDRA_CLUSTER_NAME=docker-cassandra-cluster
+      - CASSANDRA_SEEDS=docker-cassandra-1
+      - CASSANDRA_START_RPC=true
+      - JVM_EXTRA_OPTS=-Dcassandra.consistent.rangemovement=false
+    volumes:
+      - data-2:/var/lib/cassandra
+    links:
+      - docker-cassandra-1
+    networks:
+      - c-network
+
+  docker-cassandra-3:
+    image: cassandra:latest
+    container_name: docker-cassandra-3
+    environment:
+      - CASSANDRA_CLUSTER_NAME=docker-cassandra-cluster
+      - CASSANDRA_SEEDS=docker-cassandra-1
+      - CASSANDRA_START_RPC=true
+      - JVM_EXTRA_OPTS=-Dcassandra.consistent.rangemovement=false
+    volumes:
+      - data-3:/var/lib/cassandra
+    links:
+      - docker-cassandra-1
+    networks:
+      - c-network
+
+volumes:
+  data-1:
+    driver: local
+  data-2:
+    driver: local
+  data-3:
+    driver: local
+
+networks:
+  c-network:
+    driver: bridge
